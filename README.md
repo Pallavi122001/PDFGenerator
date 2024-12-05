@@ -41,10 +41,6 @@ npm run ios
 # OR using Yarn
 yarn ios
 ```
-## here you can check my application design screens 
-
-https://drive.google.com/file/d/118RBWOL70jJbbtsyCO6AgZP5wzYhsIJA/view?usp=sharing
-
 
 If everything is set up _correctly_, you should see your new app running in your _Android Emulator_ or _iOS Simulator_ shortly provided you have set up your emulator/simulator correctly.
 

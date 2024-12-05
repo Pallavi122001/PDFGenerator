@@ -1,15 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Image, Modal, ImageBackground, Animated, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, Image, Modal, ImageBackground, Animated, FlatList ,StyleSheet} from 'react-native';
 import DocumentScanner from 'react-native-document-scanner-plugin';
 import { PDFDocument } from 'pdf-lib';
 import * as RNFS from 'react-native-fs';
 import Share from 'react-native-share';
 import Toast from 'react-native-toast-message';
 import ImageResizer from 'react-native-image-resizer';
-import Colors from '../../utils/Colors';
-import AntDesign from 'react-native-vector-icons/AntDesign';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import styles from '../styles/HomeScreenCss';
+import { SH,SF,SW } from '../../utils/dimensions';
+
 const HomeScreen = () => {
     const [loading, setLoading] = useState(false);
     const [scannedImages, setScannedImages] = useState([]);
@@ -47,7 +45,6 @@ const HomeScreen = () => {
 
             return resizedImage.uri;
         } catch (error) {
-            console.error('Error resizing image:', error);
             throw new Error('Failed to resize the image.');
         }
     };
@@ -61,10 +58,8 @@ const HomeScreen = () => {
             });
 
             if (scannedImages?.length > 0) {
-                console.log('Scanned Images:', scannedImages);
                 setScannedImages(scannedImages);
             } else {
-                console.log('No images scanned.');
                 Toast.show({
                     type: 'error',
                     text1: 'No Images',
@@ -72,7 +67,6 @@ const HomeScreen = () => {
                 });
             }
         } catch (error) {
-            console.error('Error scanning document:', error);
             Toast.show({
                 type: 'error',
                 text2: 'Something went wrong while scanning the document.',
@@ -107,8 +101,6 @@ const HomeScreen = () => {
             const A4Height = 842;
 
             for (const imagePath of scannedImages) {
-                console.log('Processing image for PDF:', imagePath);
-
                 const resizedImagePath = await resizeImage(imagePath);
 
                 const fileExtension = resizedImagePath.split('.').pop().toLowerCase();
@@ -145,7 +137,6 @@ const HomeScreen = () => {
                 text2: 'You can now share or download the PDF.',
             });
         } catch (error) {
-            console.error('Error creating PDF:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Error',
@@ -158,54 +149,35 @@ const HomeScreen = () => {
 
 
 
-    const downloadPDF = async () => {
+    const handlePDFAction = async (action) => {
         if (!pdfPath) {
             Toast.show({
                 type: 'error',
-                text1: 'No PDF Found',
+                text1: 'No PDF',
                 text2: 'Please create a PDF first.',
             });
             return;
         }
 
         try {
-            const downloadPath = `${RNFS.DownloadDirectoryPath}/scannedDocument.pdf`;
-            await RNFS.copyFile(pdfPath, downloadPath);
-
-            Toast.show({
-                type: 'success',
-                text1: 'PDF Downloaded',
-                text2: 'Please check in your Downloads folder.',
-            });
+            if (action === 'download' || action === 'share') {
+                await Share.open({
+                    title: action === 'download' ? 'Download PDF' : 'Share PDF',
+                    url: `file://${pdfPath}`,
+                    type: 'application/pdf',
+                    showAppsToShare: action === 'share',
+                });
+                Toast.show({
+                    type: 'success',
+                    text1: `${action === 'download' ? 'Downloaded' : 'Shared'} Successfully`,
+                });
+            }
         } catch (error) {
-            console.error('Error downloading PDF:', error);
             Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: error.message || 'Failed to download PDF.',
+                text2: error.message || `Failed to ${action} the PDF.`,
             });
-        }
-    };
-
-
-    const sharePDF = async () => {
-        if (!pdfPath) {
-            Toast.show({
-                type: 'error',
-                text1: 'No Pdf',
-                text2: 'Please Scan & Create pdf first.',
-            });
-            return;
-        }
-
-        try {
-            await Share.open({
-                title: 'Share PDF',
-                url: `file://${pdfPath}`,
-                type: 'application/pdf',
-            });
-        } catch (error) {
-            console.error('Error sharing PDF:', error);
         }
     };
 
@@ -220,7 +192,7 @@ const HomeScreen = () => {
                 </Animated.View>
                 <View style={styles.BottomContainer}>
                     <TouchableOpacity style={styles.button} onPress={scanDocument}>
-                        <AntDesign name={'scan1'} color={Colors.theme} size={50} />
+                    <Image source={require('../images/scan.png')} style={styles.iconImage} />
                         <Text style={styles.buttonText}>Scan Doc</Text>
                     </TouchableOpacity>
 
@@ -232,7 +204,7 @@ const HomeScreen = () => {
 
                             {scannedImages.length > 1 && (
                                 <TouchableOpacity style={styles.viewMoreOverlay} onPress={toggleModal}>
-                                    <Text style={styles.viewMoreText}>+{scannedImages.length-1}</Text>
+                                    <Text style={styles.viewMoreText}>+{scannedImages.length - 1}</Text>
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -254,17 +226,17 @@ const HomeScreen = () => {
                     </Modal>
 
                     <TouchableOpacity style={styles.button} onPress={createPDF}>
-                        <AntDesign name={'pdffile1'} color={Colors.theme} size={50} />
+                    <Image source={require('../images/pdf.png')} style={styles.iconImage} />
                         <Text style={styles.buttonText}>Create PDF</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.button} onPress={downloadPDF}>
-                        <AntDesign name={'clouddownload'} color={Colors.theme} size={50} />
+                    <TouchableOpacity style={styles.button} onPress={() => handlePDFAction('download')}>
+                    <Image source={require('../images/download.png')} style={styles.iconImage} />
                         <Text style={styles.buttonText}>Download</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity style={styles.button} onPress={sharePDF}>
-                        <FontAwesome name={'share'} color={Colors.theme} size={50} />
+                    <TouchableOpacity style={styles.button} onPress={() => handlePDFAction('share')}>
+                    <Image source={require('../images/share.png')} style={styles.iconImage} />
                         <Text style={styles.buttonText}>Share PDF</Text>
                     </TouchableOpacity>
                 </View>
@@ -273,4 +245,106 @@ const HomeScreen = () => {
     );
 };
 
+
 export default HomeScreen;
+
+const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor:'#c9e6f5',
+    },
+    buttonText: {
+      color:'#166991',
+      fontSize: SF(9),
+      padding:SW(2),
+      fontWeight: 'bold',
+    }, 
+    button: {
+      backgroundColor:'#fff',
+      borderRadius: 50,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginVertical: SH(5),
+      width:SW(90),
+      height:SH(90),
+      borderColor:'#166991',
+      borderWidth:1
+    },
+    imagePreviewContainer: {
+      display:"flex",
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'space-between',
+      padding:SW(6),
+      position:"absolute",
+      right:SW(260),
+      top:SH(320)
+    },
+    imagePreview: {
+      width: '100%',
+      height: SH(90),
+      marginBottom: SH(10),
+      borderRadius: 10,
+    },
+    viewMoreOverlay: {
+      position: 'absolute',
+      right: SH(10),
+      bottom: SH(10),
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      padding: SW(10),
+      borderRadius: 5,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    viewMoreText: {
+      color: '#fff',
+      fontWeight: 'bold',
+      fontSize: SF(16),
+    },
+    modalContainer: {
+      flex: 1,
+      backgroundColor: '#000',
+    },
+    fullImage: {
+      width: '100%',
+      height: SH(300),
+      resizeMode: 'contain',
+      marginBottom: SH(10),
+    },
+    closeButton: {
+      position: 'absolute',
+      bottom: SH(20),
+      alignSelf: 'center',
+      backgroundColor: '#fff',
+      padding: SW(10),
+      borderRadius: 10,
+    },
+    closeButtonText: {
+      fontSize: SF(16),
+      fontWeight: 'bold',
+    },
+    BottomContainer:{
+      position:"absolute",
+      display:"flex",
+      flexDirection:"column",
+      justifyContent:"space-around",
+    top:SH(350),
+    left:SW(270)
+    },
+    animatedContainer: {
+      width: '100%',
+      alignItems: 'center',
+    },
+    image: {
+      width: '95%',
+      height: SH(180),
+      marginVertical:SH(10),
+      borderRadius: 10,
+      resizeMode: 'cover',
+    },
+    iconImage:{
+        width:SW(40),
+        height: SH(40),
+        resizeMode: 'contain',
+    }
+  });
